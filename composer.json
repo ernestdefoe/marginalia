@@ -1,0 +1,28 @@
+{
+    "name": "ernestdefoe/marginalia",
+    "description": "Marginalia — highlight a passage in a post. Keep it to yourself with a note, or mark it publicly: the sentences people keep marking glow.",
+    "type": "flarum-extension",
+    "keywords": ["flarum", "highlights", "annotations", "notes"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ernestdefoe",
+            "email": "ernestdefoe@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "flarum/core": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "ErnestDefoe\\Marginalia\\": "src/"
+        }
+    },
+    "extra": {
+        "flarum-extension": {
+            "title": "Marginalia",
+            "category": "feature"
+        }
+    }
+}

@@ -1,0 +1,134 @@
+// ============================================================
+//  The marks
+// ============================================================
+//
+// A mark is a tint over the words, never a box around them: the passage has to
+// stay as readable as the rest of the post, and a border would cut a sentence
+// into pieces wherever two readers' selections disagreed by a word.
+//
+// 🚨 `color-mix` has to be escaped — less.php parses it as a function call and
+// errors on the `in srgb` argument.
+.Marginalia-mark {
+  --marginalia-tint: var(--primary-color);
+
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: ~"color-mix(in srgb, var(--marginalia-tint) 34%, transparent)";
+  }
+
+  // The heat. Four steps, because past three or four readers a tint stops
+  // saying "three people" and starts saying "a lot of people", and a fifth
+  // shade would be a difference nobody can see.
+  &[data-marginalia-heat='1'] {
+    background: ~"color-mix(in srgb, var(--marginalia-tint) 12%, transparent)";
+  }
+
+  &[data-marginalia-heat='2'] {
+    background: ~"color-mix(in srgb, var(--marginalia-tint) 20%, transparent)";
+  }
+
+  &[data-marginalia-heat='3'] {
+    background: ~"color-mix(in srgb, var(--marginalia-tint) 28%, transparent)";
+  }
+
+  &[data-marginalia-heat='4'] {
+    background: ~"color-mix(in srgb, var(--marginalia-tint) 38%, transparent)";
+  }
+
+  // A mark nobody else can see is not heat, so it is not painted like heat: a
+  // dotted rule under the reader's own words, the way you would underline in
+  // a book you owned.
+  &[data-marginalia-heat='0'][data-marginalia-mine] {
+    background: none;
+    border-bottom: 1px dotted var(--muted-color);
+  }
+
+  // Yours among other people's: the tint stays, and the rule says one of these
+  // is yours.
+  &[data-marginalia-mine] {
+    border-bottom: 1px solid ~"color-mix(in srgb, var(--marginalia-tint) 55%, transparent)";
+  }
+}
+
+// ============================================================
+//  The floating bar and card
+// ============================================================
+//
+// Both are positioned in PAGE coordinates and live at the end of <body>, not
+// inside the post. A post body is re-rendered HTML; anything mounted in there
+// would be destroyed mid-selection.
+.Marginalia-host {
+  // 🚨 Pinned to the top-left of the page with no size of its own.
+  //
+  // The float inside is positioned in PAGE coordinates, so the host has to be
+  // the thing those coordinates are measured from. As `position: relative` at
+  // the end of <body> it became the offset parent at the END of the document
+  // instead, and a bar meant for a post 1500px down the page rendered 1500px
+  // BELOW the footer — offscreen, on a page that had grown taller to hold it.
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: var(--zindex-dropdown, 1000);
+}
+
+.Marginalia-float {
+  position: absolute;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--border-radius);
+  background: var(--body-bg);
+  border: 1px solid var(--control-bg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+}
+
+.Marginalia-float--popup {
+  padding: 12px 14px;
+  max-width: 320px;
+}
+
+.Marginalia-action.Button {
+  width: auto; // sidebar and post-body button rules stretch these otherwise
+  background: transparent;
+  font-size: 90%;
+}
+
+.Marginalia-card {
+  min-width: 240px;
+
+  .Marginalia-card-heat {
+    color: var(--muted-color);
+    font-size: 90%;
+  }
+
+  .Marginalia-card-note {
+    margin-top: 8px;
+
+    textarea {
+      width: 100%;
+      resize: vertical;
+    }
+  }
+
+  .Marginalia-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+
+    .Button {
+      width: auto;
+    }
+  }
+
+  .Marginalia-remove {
+    margin-inline-start: auto;
+    color: var(--alert-error-color, #d9534f);
+  }
+}
