@@ -11,9 +11,17 @@
 .Marginalia-mark {
   --marginalia-tint: var(--primary-color);
 
-  border-radius: 2px;
+  // 🚨 No corner radius. A sentence three people marked is drawn as several
+  // adjacent segments — one per overlap depth — and rounding each one notched
+  // the joins, so a smooth gradient across a sentence came out looking like a
+  // row of separate chips.
   cursor: pointer;
   transition: background-color 0.15s ease;
+
+  // A mark that wraps across lines should read as one mark on each line rather
+  // than one long box with a gap in it.
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 
   &:hover {
     background: ~"color-mix(in srgb, var(--marginalia-tint) 34%, transparent)";
@@ -99,7 +107,8 @@
 }
 
 .Marginalia-card {
-  min-width: 240px;
+  min-width: 220px;
+  max-width: 280px;
 
   .Marginalia-card-heat {
     color: var(--muted-color);
@@ -115,11 +124,13 @@
     }
   }
 
+  // One row. Wrapping put "Remove" on a line of its own at the far right,
+  // which read as a separate, heavier action than it is.
   .Marginalia-card-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     margin-top: 8px;
 
     .Button {
@@ -127,8 +138,12 @@
     }
   }
 
+  // 🚨 A literal, not `--alert-error-color`. That variable is the text colour
+  // used INSIDE an error alert — white on most themes — so the destructive
+  // action rendered identical to the neutral one next to it. This red is
+  // legible on both light and dark grounds.
   .Marginalia-remove {
     margin-inline-start: auto;
-    color: var(--alert-error-color, #d9534f);
+    color: #e35d6a;
   }
 }

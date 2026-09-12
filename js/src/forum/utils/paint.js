@@ -2,6 +2,7 @@ import app from 'flarum/forum/app';
 
 import { locate, plainText, rangeFor } from './anchor';
 import { highlightsFor } from '../state';
+import { isMine } from './mine';
 
 /**
  * Draw the marks on one rendered post.
@@ -80,7 +81,7 @@ export function paint(element, post) {
     if (!covering.length) continue;
 
     const publicCount = covering.filter((c) => c.highlight.isPublic()).length;
-    const mine = actor && covering.some((c) => c.highlight.user() === actor);
+    const mine = actor && covering.some((c) => isMine(c.highlight));
 
     segments.push({ from, to, covering, publicCount, mine });
   }

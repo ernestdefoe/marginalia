@@ -5,6 +5,7 @@ import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import username from 'flarum/common/helpers/username';
 
 import { remember, forget, highlightsFor } from '../state';
+import { isMine } from '../utils/mine';
 
 /**
  * The two floating things: the bar that appears over a selection, and the card
@@ -23,7 +24,7 @@ export function showToolbar(post, selection, at) {
 }
 
 export function showPopup(post, ids, at) {
-  const mine = highlightsFor(post).find((h) => ids.includes(String(h.id())) && h.user() === app.session.user);
+  const mine = highlightsFor(post).find((h) => ids.includes(String(h.id())) && isMine(h));
 
   state = { ...state, mode: 'popup', post, ids, at, highlight: mine || null, note: (mine && mine.note()) || '', busy: false };
   m.redraw();
@@ -44,7 +45,7 @@ export default class Layer extends Component {
 
     return (
       <div className="Marginalia-layer Marginalia-chrome">
-        <div className={`Marginalia-float Marginalia-float--${state.mode}`} style={style}>
+        <div className={`Marginalia-float Marginalia-float--${state.mode}`} style={style} data-marginalia-ids={(state.ids || []).join(',')}>
           {state.mode === 'toolbar' ? this.toolbar() : this.popup()}
         </div>
       </div>
@@ -69,7 +70,7 @@ export default class Layer extends Component {
   popup() {
     const all = highlightsFor(state.post).filter((h) => state.ids.includes(String(h.id())));
     const publicOnes = all.filter((h) => h.isPublic());
-    const others = publicOnes.filter((h) => h.user() !== app.session.user);
+    const others = publicOnes.filter((h) => !isMine(h));
     const mine = state.highlight;
 
     return (
@@ -123,29 +124,39 @@ export default class Layer extends Component {
     m.redraw();
 
     try {
+      /*
+       * 🚨 Keep what save() RESOLVES WITH, not the record it was called on.
+       *
+       * Flarum pushes the response through the store, and the store hands back
+       * its own instance — the local record stays id-less. Holding on to it
+       * poisoned three things at once, none of which pointed at the cause:
+       * the new mark drew with no id, a second mark was deduplicated away
+       * against the first (both stringified to "undefined"), and the popup
+       * opened on the wrong highlight entirely.
+       */
       const highlight = app.store.createRecord('marginalia-highlights');
 
-      await highlight.save({
+      const created = (await highlight.save({
         ...selection,
         isPublic,
         note: '',
         relationships: { post },
-      });
+      })) || highlight;
 
-      remember(post, highlight);
+      remember(post, created);
 
       // A private mark exists to carry a note, so go straight to writing one.
       if (isPublic) {
         dismiss();
       } else {
-        showPopup(post, [String(highlight.id())], state.at);
+        showPopup(post, [String(created.id())], state.at);
       }
 
       window.getSelection()?.removeAllRanges();
     } catch (e) {
       state.busy = false;
       app.alerts.show({ type: 'error' }, app.translator.trans('ernestdefoe-marginalia.forum.error'));
-      console.error('[marginalia] could not save the mark:', e);
+      console.error('[marginalia] could not save the mark:', e?.stack || e?.message || e, e);
     }
 
     m.redraw();
