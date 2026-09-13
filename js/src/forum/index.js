@@ -88,7 +88,27 @@ function onSelection(e) {
   const selection = window.getSelection();
 
   if (!selection || selection.isCollapsed) {
-    dismiss();
+    /*
+     * 🚨 A collapsed selection on a MARK is somebody clicking that mark to
+     * read its note — and this function is running late, on the timeout the
+     * mouseup handler scheduled. By now the `click` listener below has
+     * already opened the popup, so dismissing here closes the thing the
+     * reader just asked for.
+     *
+     * What that looks like depends entirely on how fast the machine is.
+     * Mithril batches redraws into an animation frame, so if the frame lands
+     * between the two the popup appears and vanishes — reported as "it
+     * appears and disappears like a flash, or a star twinkling" — and if it
+     * does not, the popup never draws at all and the notes feature simply
+     * looks unfinished. Same bug, two symptoms, neither of them near the
+     * cause.
+     *
+     * A click somewhere else still dismisses, and so does the mousedown
+     * handler above, so nothing is left open that should not be.
+     */
+    if (!e.target.closest?.('.Marginalia-mark')) {
+      dismiss();
+    }
 
     return;
   }
