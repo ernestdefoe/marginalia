@@ -22,7 +22,12 @@
     "extra": {
         "flarum-extension": {
             "title": "Marginalia",
-            "category": "feature"
+            "category": "feature",
+            "icon": {
+                "name": "fas fa-highlighter",
+                "backgroundColor": "#d97706",
+                "color": "#fff"
+            }
         }
     }
 }
