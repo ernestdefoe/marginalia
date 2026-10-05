@@ -47,6 +47,20 @@ return [
                 ->eagerLoad(['marginaliaHighlights'])
         ),
 
+    // Anywhere a client asks for marks on posts nested under a discussion
+    // (`include=firstPost.marginaliaHighlights`, and so on), batch them too:
+    // the same custom getter would otherwise lazy load once per row.
+    (new Extend\ApiResource(Resource\DiscussionResource::class))
+        ->endpoint(
+            [Endpoint\Index::class, Endpoint\Show::class],
+            fn (Endpoint\Endpoint $endpoint) => $endpoint->eagerLoad(
+                fn (array $included) => array_values(array_filter(
+                    $included,
+                    fn ($path) => is_string($path) && str_ends_with($path, '.marginaliaHighlights')
+                ))
+            )
+        ),
+
     // The frontend has to know whether this reader may mark anything at all,
     // or the toolbar appears for guests and then fails on save.
     (new Extend\ApiResource(Resource\ForumResource::class))
