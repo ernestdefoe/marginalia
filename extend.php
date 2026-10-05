@@ -37,7 +37,14 @@ return [
         ->fields(PostResourceFields::class)
         ->endpoint(
             [Endpoint\Index::class, Endpoint\Show::class, Endpoint\Create::class, Endpoint\Update::class],
-            fn (Endpoint\Endpoint $endpoint) => $endpoint->addDefaultInclude(['marginaliaHighlights'])
+            fn (Endpoint\Endpoint $endpoint) => $endpoint
+                ->addDefaultInclude(['marginaliaHighlights'])
+                // 🚨 The include alone does NOT batch this. The field has a
+                // custom getter (the privacy filter), which hides the relation
+                // from Flarum's include compiler, so every post lazy loaded its
+                // own marks: one query per post in the stream. Named here, it
+                // is one query per page.
+                ->eagerLoad(['marginaliaHighlights'])
         ),
 
     // The frontend has to know whether this reader may mark anything at all,
