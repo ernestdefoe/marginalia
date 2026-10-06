@@ -73,6 +73,10 @@ Private marks are nobody's to remove but their author's, moderators included.
 composer require ernestdefoe/marginalia
 ```
 
+## Discuss
+
+Questions, ideas and release notes: [Marginalia on discuss.flarum.org](https://discuss.flarum.org/d/39848-marginalia-highlight-a-passage-privately-or-publicly-built-using-ai).
+
 ## Licence
 
 MIT
