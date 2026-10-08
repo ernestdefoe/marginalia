@@ -136,12 +136,13 @@ export default class Layer extends Component {
        */
       const highlight = app.store.createRecord('marginalia-highlights');
 
-      const created = (await highlight.save({
-        ...selection,
-        isPublic,
-        note: '',
-        relationships: { post },
-      })) || highlight;
+      const created =
+        (await highlight.save({
+          ...selection,
+          isPublic,
+          note: '',
+          relationships: { post },
+        })) || highlight;
 
       remember(post, created);
 
