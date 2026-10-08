@@ -28,7 +28,7 @@ return [
     (new Extend\Model(Post::class))
         ->hasMany('marginaliaHighlights', Highlight::class, 'post_id'),
 
-    (new Extend\ApiResource(HighlightResource::class)),
+    new Extend\ApiResource(HighlightResource::class),
 
     // 🚨 Default-included only where the post's BODY is rendered. The
     // discussion list never draws a post body, so including marks there would
