@@ -201,12 +201,17 @@ class HighlightsTest extends TestCase
         $posts = [];
         $marks = [];
         for ($d = 10; $d <= 17; $d++) {
-            $discussions[] = ['id' => $d, 'title' => "D$d", 'slug' => "d$d", 'created_at' => Carbon::now(), 'user_id' => 2, 'first_post_id' => $d * 10, 'comment_count' => 1];
+            $discussions[] = ['id' => $d, 'title' => "D$d", 'slug' => "d$d", 'created_at' => Carbon::now(), 'user_id' => 2, 'comment_count' => 1];
             $posts[] = ['id' => $d * 10, 'discussion_id' => $d, 'number' => 1, 'created_at' => Carbon::now(), 'user_id' => 2, 'type' => 'comment', 'content' => '<t><p>Post</p></t>'];
             $marks[] = ['post_id' => $d * 10, 'user_id' => 3, 'is_public' => 1, 'start' => 0, 'length' => 4, 'quoted' => 'Post'];
         }
+        // Discussions, then their posts, then the link back: the first_post_id
+        // foreign key needs the post to exist.
         $this->database()->table('discussions')->insert($discussions);
         $this->database()->table('posts')->insert($posts);
+        for ($d = 10; $d <= 17; $d++) {
+            $this->database()->table('discussions')->where('id', $d)->update(['first_post_id' => $d * 10]);
+        }
         $this->database()->table('marginalia_highlights')->insert($marks);
 
         $response = $this->send($this->request('GET', '/api/discussions', ['authenticatedAs' => 2])->withQueryParams(['include' => 'firstPost.marginaliaHighlights']));
