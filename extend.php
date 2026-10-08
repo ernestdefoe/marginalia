@@ -37,7 +37,7 @@ return [
         ->fields(PostResourceFields::class)
         ->endpoint(
             [Endpoint\Index::class, Endpoint\Show::class, Endpoint\Create::class, Endpoint\Update::class],
-            fn (Endpoint\Endpoint $endpoint) => $endpoint
+            fn (Endpoint\Index|Endpoint\Show|Endpoint\Create|Endpoint\Update $endpoint) => $endpoint
                 ->addDefaultInclude(['marginaliaHighlights'])
                 // 🚨 The include alone does NOT batch this. The field has a
                 // custom getter (the privacy filter), which hides the relation

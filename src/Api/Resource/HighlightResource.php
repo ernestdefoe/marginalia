@@ -13,6 +13,9 @@ use Illuminate\Support\Arr;
 use Tobyz\JsonApiServer\Context as BaseContext;
 use Tobyz\JsonApiServer\Exception\BadRequestException;
 
+/**
+ * @extends AbstractDatabaseResource<Highlight>
+ */
 class HighlightResource extends AbstractDatabaseResource
 {
     public function type(): string
