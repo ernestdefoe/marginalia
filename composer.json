@@ -2,7 +2,12 @@
     "name": "ernestdefoe/marginalia",
     "description": "Marginalia — highlight a passage in a post. Keep it to yourself with a note, or mark it publicly: the sentences people keep marking glow.",
     "type": "flarum-extension",
-    "keywords": ["flarum", "highlights", "annotations", "notes"],
+    "keywords": [
+        "flarum",
+        "highlights",
+        "annotations",
+        "notes"
+    ],
     "license": "MIT",
     "authors": [
         {
@@ -22,6 +27,11 @@
             "ErnestDefoe\\Marginalia\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "ErnestDefoe\\Marginalia\\Tests\\": "tests/"
+        }
+    },
     "extra": {
         "flarum-extension": {
             "title": "Marginalia",
@@ -32,5 +42,25 @@
                 "color": "#fff"
             }
         }
-    }
+    },
+    "require-dev": {
+        "flarum/phpstan": "^2.0",
+        "flarum/testing": "^2.0"
+    },
+    "scripts": {
+        "test": [
+            "@test:integration"
+        ],
+        "test:integration": "phpunit -c tests/phpunit.integration.xml",
+        "test:setup": "@php tests/integration/setup.php",
+        "analyse:phpstan": "phpstan analyse"
+    },
+    "scripts-descriptions": {
+        "test": "Runs all tests.",
+        "test:integration": "Runs all integration tests.",
+        "test:setup": "Sets up a database for use with integration tests. Execute this only once.",
+        "analyse:phpstan": "Run static analysis"
+    },
+    "minimum-stability": "beta",
+    "prefer-stable": true
 }
