@@ -40,7 +40,10 @@
                 "name": "fas fa-highlighter",
                 "backgroundColor": "#d97706",
                 "color": "#fff"
-            }
+            },
+            "optional-dependencies": [
+                "ernestdefoe/verbatim"
+            ]
         }
     },
     "require-dev": {
@@ -62,5 +65,8 @@
         "analyse:phpstan": "Run static analysis"
     },
     "minimum-stability": "beta",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "suggest": {
+        "ernestdefoe/verbatim": "Highlights skip the markers Verbatim adds to quoted passages."
+    }
 }
