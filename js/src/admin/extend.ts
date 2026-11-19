@@ -18,7 +18,7 @@ import Admin from 'flarum/common/extenders/Admin';
  * Members — so the only visible symptom was an admin unable to give it to any
  * other group, or take it away.
  *
- * 🚨 Exported from js/src/admin/index.js and NOWHERE else. This file imports
+ * 🚨 Exported from js/src/admin/index.ts and NOWHERE else. This file imports
  * `flarum/admin/app`, which does not exist on the forum frontend —
  * re-exporting it from the forum entry runs it during forum boot and takes
  * every page of the forum down, not just the admin panel.

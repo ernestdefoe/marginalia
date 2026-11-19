@@ -1,5 +1,7 @@
 import app from 'flarum/forum/app';
 
+import type Highlight from '../models/Highlight';
+
 /**
  * Is this mark the reader's own?
  *
@@ -13,16 +15,16 @@ import app from 'flarum/forum/app';
  * serialised for its author and nobody else, so an attribute that is present
  * at all — even empty — belongs to this reader.
  */
-export function isMine(highlight) {
+export function isMine(highlight: Highlight | null | undefined): boolean {
   if (!highlight) return false;
 
   const actor = app.session.user;
 
   if (!actor) return false;
 
-  const owner = highlight.user?.();
+  const owner = highlight.user();
 
   if (owner && String(owner.id()) === String(actor.id())) return true;
 
-  return highlight.note?.() !== undefined;
+  return highlight.note() !== undefined;
 }

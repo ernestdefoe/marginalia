@@ -13,10 +13,34 @@
  * by rewriting the body's HTML.
  */
 
+export interface TextEntry {
+  node: Text;
+  start: number;
+  end: number;
+}
+
+export interface Anchor {
+  start: number;
+  quoted: string;
+  prefix?: string | null;
+  suffix?: string | null;
+}
+
+export interface Located {
+  start: number;
+  length: number;
+}
+
+export interface Description extends Located {
+  quoted: string;
+  prefix: string;
+  suffix: string;
+}
+
 /** Every text node under `root`, with the running offset each one starts at. */
-export function textNodes(root) {
+export function textNodes(root: Node): TextEntry[] {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
+    acceptNode(node: Node) {
       // Ignore anything we or another extension injected as chrome — a
       // "edited since quoted" marker is not part of the post's words.
       if (node.parentElement?.closest('.Marginalia-chrome, .Verbatim-marker, script, style')) {
@@ -27,11 +51,11 @@ export function textNodes(root) {
     },
   });
 
-  const nodes = [];
+  const nodes: TextEntry[] = [];
   let offset = 0;
 
   while (walker.nextNode()) {
-    const node = walker.currentNode;
+    const node = walker.currentNode as Text;
 
     nodes.push({ node, start: offset, end: offset + node.data.length });
     offset += node.data.length;
@@ -40,7 +64,7 @@ export function textNodes(root) {
   return nodes;
 }
 
-export function plainText(root) {
+export function plainText(root: Node): string {
   return textNodes(root)
     .map((n) => n.node.data)
     .join('');
@@ -53,14 +77,14 @@ export function plainText(root) {
  * has been edited away is simply not drawn. Guessing would put somebody's mark
  * on words they never marked.
  */
-export function locate(text, highlight) {
+export function locate(text: string, highlight: Anchor): Located | null {
   const quoted = highlight.quoted;
 
   if (!quoted) return null;
 
   // 1. Exactly where it was. The overwhelmingly common case — most posts are
   //    never edited at all.
-  if (text.substr(highlight.start, quoted.length) === quoted) {
+  if (text.slice(highlight.start, highlight.start + quoted.length) === quoted) {
     return { start: highlight.start, length: quoted.length };
   }
 
@@ -78,7 +102,7 @@ export function locate(text, highlight) {
 
   // 3. The passage alone, nearest to where it used to be — a paragraph added
   //    above should not orphan every mark below it.
-  const candidates = [];
+  const candidates: number[] = [];
   let at = text.indexOf(quoted);
 
   while (at !== -1 && candidates.length < 20) {
@@ -94,11 +118,11 @@ export function locate(text, highlight) {
 }
 
 /** A DOM Range covering [start, start + length) of the plain text. */
-export function rangeFor(root, start, length) {
+export function rangeFor(root: Node, start: number, length: number): Range | null {
   const nodes = textNodes(root);
   const end = start + length;
 
-  let range = null;
+  let range: Range | null = null;
 
   for (const entry of nodes) {
     if (!range && entry.end > start) {
@@ -120,7 +144,7 @@ export function rangeFor(root, start, length) {
  * Turn the reader's selection into something storable: offsets into the plain
  * text, the passage itself, and up to 40 characters of context either side.
  */
-export function describeSelection(root, selection) {
+export function describeSelection(root: Node, selection: Selection | null): Description | null {
   if (!selection || selection.isCollapsed || selection.rangeCount === 0) return null;
 
   const range = selection.getRangeAt(0);
@@ -128,7 +152,7 @@ export function describeSelection(root, selection) {
   if (!root.contains(range.commonAncestorContainer)) return null;
 
   const nodes = textNodes(root);
-  const offsetOf = (node, offset) => {
+  const offsetOf = (node: Node, offset: number): number | null => {
     const entry = nodes.find((n) => n.node === node);
 
     return entry ? entry.start + offset : null;

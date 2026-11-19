@@ -75,12 +75,37 @@ class HighlightResource extends AbstractDatabaseResource
                 ->visible(fn (Highlight $h, Context $context) => $context->getActor()->id === $h->user_id)
                 ->maxLength(2000),
 
+            ...$this->anchorFields(),
+
+            Schema\DateTime::make('createdAt')
+                ->property('created_at'),
+
+            Schema\Relationship\ToOne::make('user')
+                ->type('users')
+                ->includable(),
+
+            Schema\Relationship\ToOne::make('post')
+                ->type('posts')
+                ->writableOnCreate()
+                ->required(),
+        ];
+    }
+
+    /**
+     * Where the passage was and enough of it to find it again: set once, when
+     * the mark is made, and never edited.
+     */
+    private function anchorFields(): array
+    {
+        return [
             Schema\Integer::make('start')
                 ->writableOnCreate()
+                ->min(0)
                 ->default(0),
 
             Schema\Integer::make('length')
                 ->writableOnCreate()
+                ->min(0)
                 ->default(0),
 
             Schema\Str::make('quoted')
@@ -97,18 +122,6 @@ class HighlightResource extends AbstractDatabaseResource
                 ->nullable()
                 ->writableOnCreate()
                 ->maxLength(100),
-
-            Schema\DateTime::make('createdAt')
-                ->property('created_at'),
-
-            Schema\Relationship\ToOne::make('user')
-                ->type('users')
-                ->includable(),
-
-            Schema\Relationship\ToOne::make('post')
-                ->type('posts')
-                ->writableOnCreate()
-                ->required(),
         ];
     }
 

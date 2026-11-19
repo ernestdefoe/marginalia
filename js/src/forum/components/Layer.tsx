@@ -3,9 +3,29 @@ import Component from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import username from 'flarum/common/helpers/username';
+import RequestError from 'flarum/common/utils/RequestError';
+import type Post from 'flarum/common/models/Post';
 
-import { remember, forget, highlightsFor } from '../state';
+import { remember, forget, highlightsFor, repaint } from '../state';
 import { isMine } from '../utils/mine';
+import type Highlight from '../models/Highlight';
+import type { Description } from '../utils/anchor';
+
+interface At {
+  top: number;
+  left: number;
+}
+
+interface LayerState {
+  mode: 'toolbar' | 'popup' | null;
+  post: Post | null;
+  at: At | null;
+  selection: Description | null;
+  ids: string[];
+  busy: boolean;
+  note: string;
+  highlight: Highlight | null;
+}
 
 /**
  * The two floating things: the bar that appears over a selection, and the card
@@ -16,21 +36,21 @@ import { isMine } from '../utils/mine';
  * gets re-written on every redraw, and anything rendered into it would take
  * the reader's selection down with it the moment they made one.
  */
-let state = { mode: null, post: null, at: null, selection: null, ids: [], busy: false, note: '', highlight: null };
+let state: LayerState = { mode: null, post: null, at: null, selection: null, ids: [], busy: false, note: '', highlight: null };
 
-export function showToolbar(post, selection, at) {
+export function showToolbar(post: Post, selection: Description, at: At): void {
   state = { ...state, mode: 'toolbar', post, selection, at, busy: false };
   m.redraw();
 }
 
-export function showPopup(post, ids, at) {
+export function showPopup(post: Post, ids: string[], at: At | null): void {
   const mine = highlightsFor(post).find((h) => ids.includes(String(h.id())) && isMine(h));
 
-  state = { ...state, mode: 'popup', post, ids, at, highlight: mine || null, note: (mine && mine.note()) || '', busy: false };
+  state = { ...state, mode: 'popup', post, ids, at, highlight: mine || null, note: mine?.note() || '', busy: false };
   m.redraw();
 }
 
-export function dismiss() {
+export function dismiss(): void {
   if (!state.mode) return;
 
   state = { ...state, mode: null, selection: null, ids: [], highlight: null };
@@ -41,7 +61,7 @@ export default class Layer extends Component {
   view() {
     if (!state.mode) return <div className="Marginalia-layer" />;
 
-    const style = { top: `${state.at.top}px`, left: `${state.at.left}px` };
+    const style = { top: `${state.at?.top ?? 0}px`, left: `${state.at?.left ?? 0}px` };
 
     return (
       <div className="Marginalia-layer Marginalia-chrome">
@@ -81,7 +101,7 @@ export default class Layer extends Component {
                 count: publicOnes.length,
                 names: others
                   .slice(0, 3)
-                  .map((h) => username(h.user()))
+                  .map((h) => username(h.user() || null))
                   .join(', '),
               })
             : app.translator.trans('ernestdefoe-marginalia.forum.popup.private_only')}
@@ -91,10 +111,12 @@ export default class Layer extends Component {
           <div className="Marginalia-card-note">
             <textarea
               className="FormControl"
-              rows="3"
+              rows={3}
               placeholder={app.translator.trans('ernestdefoe-marginalia.forum.popup.note_placeholder')}
               value={state.note}
-              oninput={(e) => (state.note = e.target.value)}
+              oninput={(e: InputEvent) => {
+                state.note = (e.target as HTMLTextAreaElement).value;
+              }}
             />
             <div className="Marginalia-card-actions">
               <Button className="Button Button--primary Button--small" loading={state.busy} onclick={() => this.saveNote()}>
@@ -115,7 +137,7 @@ export default class Layer extends Component {
     );
   }
 
-  async create(isPublic) {
+  async create(isPublic: boolean): Promise<void> {
     const { post, selection } = state;
 
     if (!post || !selection) return;
@@ -134,7 +156,7 @@ export default class Layer extends Component {
        * against the first (both stringified to "undefined"), and the popup
        * opened on the wrong highlight entirely.
        */
-      const highlight = app.store.createRecord('marginalia-highlights');
+      const highlight = app.store.createRecord<Highlight>('marginalia-highlights');
 
       const created =
         (await highlight.save({
@@ -154,16 +176,14 @@ export default class Layer extends Component {
       }
 
       window.getSelection()?.removeAllRanges();
-    } catch (e) {
-      state.busy = false;
-      app.alerts.show({ type: 'error' }, app.translator.trans('ernestdefoe-marginalia.forum.error'));
-      console.error('[marginalia] could not save the mark:', e?.stack || e?.message || e, e);
+    } catch (error) {
+      failed(error);
     }
 
     m.redraw();
   }
 
-  async saveNote() {
+  async saveNote(): Promise<void> {
     if (!state.highlight) return;
 
     state.busy = true;
@@ -172,15 +192,14 @@ export default class Layer extends Component {
     try {
       await state.highlight.save({ note: state.note });
       dismiss();
-    } catch (e) {
-      state.busy = false;
-      console.error('[marginalia] could not save the note:', e);
+    } catch (error) {
+      failed(error);
     }
 
     m.redraw();
   }
 
-  async toggleVisibility() {
+  async toggleVisibility(): Promise<void> {
     if (!state.highlight) return;
 
     const next = !state.highlight.isPublic();
@@ -190,15 +209,18 @@ export default class Layer extends Component {
 
     try {
       await state.highlight.save({ isPublic: next });
-    } catch (e) {
-      console.error('[marginalia] could not change the visibility:', e);
+      state.busy = false;
+
+      // The heat counts public marks only, so the post's colour changes too.
+      if (state.post) repaint(state.post);
+    } catch (error) {
+      failed(error);
     }
 
-    state.busy = false;
     m.redraw();
   }
 
-  async remove() {
+  async remove(): Promise<void> {
     if (!state.highlight) return;
 
     state.busy = true;
@@ -206,13 +228,30 @@ export default class Layer extends Component {
 
     try {
       await state.highlight.delete();
-      forget(state.highlight);
+
+      if (state.post) forget(state.post, state.highlight);
       dismiss();
-    } catch (e) {
-      state.busy = false;
-      console.error('[marginalia] could not remove the mark:', e);
+    } catch (error) {
+      failed(error);
     }
 
     m.redraw();
+  }
+}
+
+/**
+ * Every failed save ends here, so none of them leaves the reader guessing.
+ *
+ * A failed request has already been announced: core's request error handler
+ * shows the server's own message (a note over the length limit, a mark that
+ * was removed elsewhere), and a second, vaguer alert on top of it would only
+ * add noise. Anything else (the request never went out, or handling its
+ * response threw) gets this extension's alert instead.
+ */
+function failed(error: unknown): void {
+  state.busy = false;
+
+  if (!(error instanceof RequestError)) {
+    app.alerts.show({ type: 'error' }, app.translator.trans('ernestdefoe-marginalia.forum.error'));
   }
 }

@@ -53,13 +53,13 @@ class HighlightsTest extends TestCase
         ]);
     }
 
-    private function create(int $actor, int $post): \Psr\Http\Message\ResponseInterface
+    private function create(int $actor, int $post, array $attributes = []): \Psr\Http\Message\ResponseInterface
     {
         return $this->send($this->request('POST', '/api/marginalia-highlights', [
             'authenticatedAs' => $actor,
             'json' => ['data' => [
                 'type' => 'marginalia-highlights',
-                'attributes' => ['quoted' => 'Post', 'start' => 0, 'length' => 4, 'isPublic' => false],
+                'attributes' => $attributes + ['quoted' => 'Post', 'start' => 0, 'length' => 4, 'isPublic' => false],
                 'relationships' => ['post' => ['data' => ['type' => 'posts', 'id' => (string) $post]]],
             ]],
         ]));
@@ -107,6 +107,19 @@ class HighlightsTest extends TestCase
         $this->assertSame('2', $body['data']['relationships']['user']['data']['id'] ?? null);
         $this->assertFalse($body['data']['attributes']['isPublic']);
         $this->assertSame(2, $this->database()->table('marginalia_highlights')->where('id', $body['data']['id'])->value('user_id'));
+    }
+
+    #[Test]
+    public function negative_offsets_are_rejected_before_they_reach_the_unsigned_columns()
+    {
+        // MySQL refuses a negative value for an UNSIGNED column with an error,
+        // which would surface as a 500 rather than a validation message.
+        $this->app();
+        $before = $this->database()->table('marginalia_highlights')->count();
+
+        $this->assertSame(422, $this->create(2, 1, ['start' => -1])->getStatusCode());
+        $this->assertSame(422, $this->create(2, 1, ['length' => -4])->getStatusCode());
+        $this->assertSame($before, $this->database()->table('marginalia_highlights')->count());
     }
 
     #[Test]

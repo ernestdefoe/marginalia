@@ -5,13 +5,12 @@
  */
 
 use ErnestDefoe\Marginalia\Access\HighlightPolicy;
+use ErnestDefoe\Marginalia\Api\ForumResourceFields;
 use ErnestDefoe\Marginalia\Api\PostResourceFields;
 use ErnestDefoe\Marginalia\Api\Resource\HighlightResource;
 use ErnestDefoe\Marginalia\Model\Highlight;
-use Flarum\Api\Context;
 use Flarum\Api\Endpoint;
 use Flarum\Api\Resource;
-use Flarum\Api\Schema;
 use Flarum\Extend;
 use Flarum\Post\Post;
 
@@ -61,13 +60,8 @@ return [
             )
         ),
 
-    // The frontend has to know whether this reader may mark anything at all,
-    // or the toolbar appears for guests and then fails on save.
     (new Extend\ApiResource(Resource\ForumResource::class))
-        ->fields(fn () => [
-            Schema\Boolean::make('canMarginaliaHighlight')
-                ->get(fn ($forum, Context $context) => $context->getActor()->hasPermission('marginalia.highlight')),
-        ]),
+        ->fields(ForumResourceFields::class),
 
     (new Extend\Policy())
         ->modelPolicy(Highlight::class, HighlightPolicy::class),
